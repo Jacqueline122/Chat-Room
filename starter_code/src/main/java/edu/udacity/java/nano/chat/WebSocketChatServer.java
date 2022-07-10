@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 
 @Component
-@ServerEndpoint("/chat")
+@ServerEndpoint("/chat/{username}")
 public class WebSocketChatServer {
 
     /**
@@ -32,12 +32,11 @@ public class WebSocketChatServer {
         //TODO: add send message method.
         for (Session s: onlineSessions.values()){
             try {
-                s.getBasicRemote().sendText(JSON.toJSONString(msg));
+                s.getBasicRemote().sendText(msg);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
-
 
     }
 
@@ -47,12 +46,9 @@ public class WebSocketChatServer {
     @OnOpen
     public void onOpen(Session session,  @PathParam("username") String username) {
         //TODO: add on open connection.
-        onlineSessions.put(username, session);
-
-        Message msg = new Message(" joined the chat room.", username,onlineSessions.size(), "ENTER");
-
+        onlineSessions.put(session.getId(), session);
+        Message msg = new Message(" joined the chat room.", username,  onlineSessions.size(), "ENTER");
         sendMessageToAll(JSON.toJSONString(msg));
-
 
     }
 
@@ -63,9 +59,7 @@ public class WebSocketChatServer {
     public void onMessage(Session session, String jsonStr) {
         //TODO: add send message.
         Message message = JSON.parseObject(jsonStr, Message.class);
-        message.setOnlineCount(onlineSessions.size());
-        message.setType("SPEAK");
-        sendMessageToAll(JSON.toJSONString(message));
+        sendMessageToAll(JSON.toJSONString(new Message(message.getMsg(), message.getUsername(), onlineSessions.size(), "SPEAK")));
     }
 
     /**
@@ -75,8 +69,7 @@ public class WebSocketChatServer {
     public void onClose(Session session) {
         //TODO: add close connection.
         onlineSessions.remove(session.getId());
-        Message msg = new Message(" joined the chat room.", "",onlineSessions.size(), "LEAVE");
-
+        Message msg = new Message(" Leave the chat.", "",onlineSessions.size(), "LEAVE");
         sendMessageToAll(JSON.toJSONString(msg));
 
     }
@@ -90,3 +83,8 @@ public class WebSocketChatServer {
     }
 
 }
+
+
+
+
+
